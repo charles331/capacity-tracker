@@ -1,70 +1,99 @@
 /* public/style.css */
+
+/* Styles généraux du corps de la page */
 body {
   font-family: Arial, sans-serif;
   margin: 20px;
-  background-color: #f4f7f6;
-  color: #333;
+  background-color: #f4f7f6; /* Couleur de fond légère */
+  color: #333; /* Couleur de texte principale */
 }
 
+/* Conteneur principal de l'application */
 .container {
-  max-width: 1200px;
-  margin: 0 auto;
-  background-color: #fff;
+  max-width: 1200px; /* Largeur maximale pour un affichage agréable */
+  margin: 0 auto; /* Centrage horizontal */
+  background-color: #fff; /* Fond blanc pour le contenu */
   padding: 30px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px; /* Coins arrondis */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Légère ombre pour la profondeur */
 }
 
+/* Styles des titres */
 h1,
-h2 {
-  color: #0056b3;
+h2,
+h3 {
+  color: #0056b3; /* Bleu foncé pour les titres */
   text-align: center;
   margin-bottom: 25px;
 }
 
+/* Section de formulaire générique */
 .form-section {
   margin-bottom: 40px;
   padding: 20px;
-  border: 1px solid #ddd;
+  border: 1px solid #ddd; /* Bordure légère */
   border-radius: 5px;
-  background-color: #f9f9f9;
+  background-color: #f9f9f9; /* Fond légèrement grisé */
 }
 
-#addAbsenceForm div {
+/* Espacement pour les éléments de formulaire */
+#addAbsenceForm div,
+#addSquadForm div,
+#addMemberForm div,
+.member-management > div {
   margin-bottom: 15px;
 }
 
-#addAbsenceForm label {
-  display: block;
+/* Styles des labels de formulaire */
+#addAbsenceForm label,
+#addSquadForm label,
+#addMemberForm label,
+.member-management label {
+  display: block; /* Chaque label sur sa propre ligne */
   margin-bottom: 5px;
   font-weight: bold;
 }
 
+/* Styles des champs de saisie et des sélecteurs */
 #addAbsenceForm input[type="text"],
 #addAbsenceForm input[type="date"],
-#addAbsenceForm select {
-  width: calc(100% - 22px);
+#addAbsenceForm select,
+#addSquadForm input[type="text"],
+#addSquadForm input[type="number"],
+#addMemberForm input[type="text"],
+#manageMembersSquadSelect {
+  width: calc(100% - 22px); /* Largeur pleine moins le padding */
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 16px;
 }
 
-#addAbsenceForm button {
-  background-color: #007bff;
+/* Styles des boutons */
+#addAbsenceForm button,
+#addSquadForm button,
+#addMemberForm button,
+.delete-squad-btn,
+.delete-member-btn {
+  background-color: #007bff; /* Bleu primaire */
   color: white;
-  padding: 12px 20px;
+  padding: 10px 15px;
   border: none;
   border-radius: 5px;
   cursor: pointer;
   font-size: 16px;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s ease; /* Transition douce au survol */
+  margin-top: 5px;
 }
 
-#addAbsenceForm button:hover {
-  background-color: #0056b3;
+/* Effet de survol pour les boutons */
+#addAbsenceForm button:hover,
+#addSquadForm button:hover,
+#addMemberForm button:hover {
+  background-color: #0056b3; /* Bleu plus foncé au survol */
 }
 
+/* Styles des messages d'information/erreur */
 .message {
   margin-top: 15px;
   padding: 10px;
@@ -73,64 +102,108 @@ h2 {
   text-align: center;
 }
 .message.success {
-  background-color: #d4edda;
-  color: #155724;
+  background-color: #d4edda; /* Vert clair pour le succès */
+  color: #155724; /* Texte vert foncé */
   border-color: #c3e6cb;
 }
 .message.error {
-  background-color: #f8d7da;
-  color: #721c24;
+  background-color: #f8d7da; /* Rouge clair pour l'erreur */
+  color: #721c24; /* Texte rouge foncé */
   border-color: #f5c6cb;
 }
 
+/* Styles spécifiques pour les sections de gestion (squads et membres) */
+.squad-management,
+.member-management {
+  margin-top: 20px;
+}
+
+/* Styles des listes de squads et de membres */
+#squadList,
+#memberList {
+  list-style: none; /* Supprime les puces de liste */
+  padding: 0;
+  margin-top: 20px;
+}
+
+#squadList li,
+#memberList li {
+  background-color: #e9ecef; /* Fond gris clair pour les éléments de liste */
+  padding: 10px 15px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  display: flex; /* Utilisation de flexbox pour aligner nom et bouton */
+  justify-content: space-between; /* Espacement entre le nom et le bouton */
+  align-items: center; /* Alignement vertical */
+  font-size: 1.1em;
+}
+
+/* Styles des boutons de suppression (squads et membres) */
+.delete-squad-btn,
+.delete-member-btn {
+  background-color: #dc3545; /* Rouge vif pour la suppression */
+  padding: 8px 12px;
+  font-size: 0.9em;
+}
+
+.delete-squad-btn:hover,
+.delete-member-btn:hover {
+  background-color: #c82333; /* Rouge plus foncé au survol */
+}
+
+/* Section de la heatmap */
 .heatmap-section {
   margin-top: 40px;
-  overflow-x: auto; /* Permet le défilement horizontal pour la heatmap */
+  overflow-x: auto; /* Permet le défilement horizontal si la heatmap est trop large */
 }
 
+/* Conteneur de la heatmap (utilisé comme grille CSS) */
 #heatmap-container {
   display: grid;
-  /* Grid template columns will be set by JS */
+  /* grid-template-columns sera défini par JavaScript */
   border: 1px solid #ccc;
   border-radius: 5px;
-  min-width: 800px; /* Assurez-vous qu'elle soit assez large pour les colonnes */
+  min-width: 800px; /* Assure une largeur minimale pour les colonnes */
 }
 
+/* Styles des en-têtes et des cellules de la heatmap */
 .heatmap-header,
 .heatmap-cell {
   padding: 8px 5px;
   text-align: center;
-  border: 1px solid #eee;
+  border: 1px solid #eee; /* Bordures fines entre les cellules */
   font-size: 0.9em;
-  white-space: nowrap; /* Empêche le retour à la ligne pour les semaines */
+  white-space: nowrap; /* Empêche le retour à la ligne pour les noms de semaines */
 }
 
+/* Styles des en-têtes de colonne (semaines) */
 .heatmap-header {
-  background-color: #e0e0e0;
+  background-color: #e0e0e0; /* Fond gris pour les en-têtes */
   font-weight: bold;
 }
 
+/* Styles des en-têtes de ligne (squads) */
 .heatmap-row-header {
-  background-color: #f0f0f0;
+  background-color: #f0f0f0; /* Fond légèrement plus clair */
   font-weight: bold;
   text-align: left;
-  position: sticky; /* Fige la colonne des squads */
+  position: sticky; /* Fige la colonne des squads lors du défilement horizontal */
   left: 0;
-  z-index: 10;
+  z-index: 10; /* Assure qu'il reste au-dessus des autres cellules */
 }
 
-/* Couleurs de la heatmap */
+/* Couleurs de la heatmap basées sur le pourcentage d'absence */
 .capacity-low {
-  background-color: #c8e6c9; /* Vert clair (0-25%) */
+  background-color: #c8e6c9; /* Vert clair (0-25% d'absence) */
 }
 .capacity-medium {
-  background-color: #ffe082; /* Jaune (25-50%) */
+  background-color: #ffe082; /* Jaune (25-50% d'absence) */
 }
 .capacity-high {
-  background-color: #ef9a9a; /* Rouge clair (>50%) */
+  background-color: #ef9a9a; /* Rouge clair (>50% d'absence - alerte) */
   font-weight: bold;
-  color: #a00;
+  color: #a00; /* Texte rouge foncé pour l'alerte */
 }
 .capacity-unknown {
-  background-color: #bdbdbd; /* Gris pour les données manquantes ou 0 membres */
+  background-color: #bdbdbd; /* Gris pour les cas inconnus ou 0 membres */
 }

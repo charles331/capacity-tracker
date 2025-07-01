@@ -10,16 +10,14 @@
     <div class="container">
       <h1>Capacité des Équipes (Absences > 50%)</h1>
 
+      <!-- Section pour ajouter une absence -->
       <div class="form-section">
         <h2>Ajouter une Absence</h2>
         <form id="addAbsenceForm">
           <div>
-            <label for="squadSelect">Équipe (Squad):</label>
-            <select id="squadSelect" required></select>
-          </div>
-          <div>
-            <label for="memberName">Nom du Membre:</label>
-            <input type="text" id="memberName" required />
+            <label for="memberSelect">Membre:</label>
+            <!-- Le sélecteur sera rempli dynamiquement par JavaScript avec les membres de toutes les squads -->
+            <select id="memberSelect" required></select>
           </div>
           <div>
             <label for="startDate">Date de Début:</label>
@@ -34,14 +32,71 @@
         <p id="formMessage" class="message"></p>
       </div>
 
+      <!-- Section pour la gestion des squads (ajout et suppression) -->
+      <div class="form-section">
+        <h2>Gérer les Équipes (Squads)</h2>
+        <div class="squad-management">
+          <h3>Ajouter une nouvelle équipe</h3>
+          <form id="addSquadForm">
+            <div>
+              <label for="newSquadName">Nom de l'équipe:</label>
+              <input type="text" id="newSquadName" required />
+            </div>
+            <button type="submit">Ajouter l'équipe</button>
+          </form>
+          <p id="addSquadMessage" class="message"></p>
+
+          <h3>Équipes existantes</h3>
+          <ul id="squadList">
+            <!-- Les squads seront chargées ici par JavaScript -->
+            <li>Chargement des équipes...</li>
+          </ul>
+          <p id="squadListMessage" class="message"></p>
+        </div>
+      </div>
+
+      <!-- Section pour la gestion des membres (ajout et suppression par équipe) -->
+      <div class="form-section">
+        <h2>Gérer les Membres par Équipe</h2>
+        <div class="member-management">
+          <div>
+            <label for="manageMembersSquadSelect"
+              >Sélectionner une équipe:</label
+            >
+            <!-- Ce sélecteur sera rempli avec les squads existantes -->
+            <select id="manageMembersSquadSelect"></select>
+          </div>
+
+          <h3>Ajouter un nouveau membre</h3>
+          <form id="addMemberForm">
+            <div>
+              <label for="newMemberName">Nom du membre:</label>
+              <input type="text" id="newMemberName" required />
+            </div>
+            <button type="submit">Ajouter le membre</button>
+          </form>
+          <p id="addMemberMessage" class="message"></p>
+
+          <h3>Membres de l'équipe sélectionnée</h3>
+          <ul id="memberList">
+            <!-- Les membres de la squad sélectionnée seront chargés ici par JavaScript -->
+            <li>Sélectionnez une équipe pour voir les membres.</li>
+          </ul>
+          <p id="memberListMessage" class="message"></p>
+        </div>
+      </div>
+
+      <!-- Section pour l'affichage de la heatmap de capacité -->
       <div class="heatmap-section">
         <h2>Vue Semaine par Semaine</h2>
         <div id="heatmap-container">
+          <!-- La heatmap sera générée ici par JavaScript -->
           <p id="loadingMessage">Chargement de la capacité...</p>
         </div>
       </div>
     </div>
 
+    <!-- Script JavaScript principal -->
     <script src="script.js"></script>
   </body>
 </html>

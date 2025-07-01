@@ -8,7 +8,7 @@
     "start": "node dist/server.js",
     "dev": "nodemon --watch src --exec ts-node src/server.ts",
     "build": "tsc",
-    "db:init": "ts-node src/database.ts"
+    "db:init": "ts-node src/cleanDb.ts && ts-node src/database.ts"
   },
   "keywords": [],
   "author": "",
