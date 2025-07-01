@@ -1,0 +1,136 @@
+/* public/style.css */
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  background-color: #f4f7f6;
+  color: #333;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: #fff;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+h1,
+h2 {
+  color: #0056b3;
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.form-section {
+  margin-bottom: 40px;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}
+
+#addAbsenceForm div {
+  margin-bottom: 15px;
+}
+
+#addAbsenceForm label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+#addAbsenceForm input[type="text"],
+#addAbsenceForm input[type="date"],
+#addAbsenceForm select {
+  width: calc(100% - 22px);
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+#addAbsenceForm button {
+  background-color: #007bff;
+  color: white;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
+}
+
+#addAbsenceForm button:hover {
+  background-color: #0056b3;
+}
+
+.message {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 4px;
+  font-weight: bold;
+  text-align: center;
+}
+.message.success {
+  background-color: #d4edda;
+  color: #155724;
+  border-color: #c3e6cb;
+}
+.message.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border-color: #f5c6cb;
+}
+
+.heatmap-section {
+  margin-top: 40px;
+  overflow-x: auto; /* Permet le défilement horizontal pour la heatmap */
+}
+
+#heatmap-container {
+  display: grid;
+  /* Grid template columns will be set by JS */
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  min-width: 800px; /* Assurez-vous qu'elle soit assez large pour les colonnes */
+}
+
+.heatmap-header,
+.heatmap-cell {
+  padding: 8px 5px;
+  text-align: center;
+  border: 1px solid #eee;
+  font-size: 0.9em;
+  white-space: nowrap; /* Empêche le retour à la ligne pour les semaines */
+}
+
+.heatmap-header {
+  background-color: #e0e0e0;
+  font-weight: bold;
+}
+
+.heatmap-row-header {
+  background-color: #f0f0f0;
+  font-weight: bold;
+  text-align: left;
+  position: sticky; /* Fige la colonne des squads */
+  left: 0;
+  z-index: 10;
+}
+
+/* Couleurs de la heatmap */
+.capacity-low {
+  background-color: #c8e6c9; /* Vert clair (0-25%) */
+}
+.capacity-medium {
+  background-color: #ffe082; /* Jaune (25-50%) */
+}
+.capacity-high {
+  background-color: #ef9a9a; /* Rouge clair (>50%) */
+  font-weight: bold;
+  color: #a00;
+}
+.capacity-unknown {
+  background-color: #bdbdbd; /* Gris pour les données manquantes ou 0 membres */
+}

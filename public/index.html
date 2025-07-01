@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Team Capacity Tracker</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Capacité des Équipes (Absences > 50%)</h1>
+
+      <div class="form-section">
+        <h2>Ajouter une Absence</h2>
+        <form id="addAbsenceForm">
+          <div>
+            <label for="squadSelect">Équipe (Squad):</label>
+            <select id="squadSelect" required></select>
+          </div>
+          <div>
+            <label for="memberName">Nom du Membre:</label>
+            <input type="text" id="memberName" required />
+          </div>
+          <div>
+            <label for="startDate">Date de Début:</label>
+            <input type="date" id="startDate" required />
+          </div>
+          <div>
+            <label for="endDate">Date de Fin:</label>
+            <input type="date" id="endDate" required />
+          </div>
+          <button type="submit">Ajouter l'Absence</button>
+        </form>
+        <p id="formMessage" class="message"></p>
+      </div>
+
+      <div class="heatmap-section">
+        <h2>Vue Semaine par Semaine</h2>
+        <div id="heatmap-container">
+          <p id="loadingMessage">Chargement de la capacité...</p>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
