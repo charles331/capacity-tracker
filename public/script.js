@@ -404,9 +404,11 @@ document.addEventListener("DOMContentLoaded", () => {
       // Ajouter les écouteurs d'événements aux cellules de la heatmap
       document.querySelectorAll(".heatmap-cell").forEach((cell) => {
         cell.addEventListener("click", (event) => {
+          console.log("Heatmap cell clicked!"); // Log de débogage
           const clickedCell = event.currentTarget;
           const squadName = clickedCell.dataset.squadName;
           const weekId = clickedCell.dataset.weekId;
+          console.log(`Clicked on: Squad - ${squadName}, Week - ${weekId}`); // Log des données cliquées
           showAbsenceDetails(squadName, weekId);
         });
       });
@@ -429,13 +431,43 @@ document.addEventListener("DOMContentLoaded", () => {
    * @param {string} weekId L'ID de la semaine (ex: "2025-W28").
    */
   function showAbsenceDetails(squadName, weekId) {
+    console.log("showAbsenceDetails function called."); // Log de débogage
     modalSquadWeekTitle.textContent = `Absences pour ${squadName} - Semaine ${weekId}`;
     modalAbsenceList.innerHTML = ""; // Nettoyer la liste précédente
     modalNoAbsencesMessage.style.display = "none"; // Masquer le message "aucune absence"
 
-    const weekStart = DateTime.fromFormat(weekId, "yyyy-W").startOf("week");
-    const weekEnd = weekStart.endOf("week");
-    const weekInterval = Interval.fromDateTimes(weekStart, weekEnd);
+    // CORRECTION CLÉ ICI : Parser l'année et le numéro de semaine séparément
+    console.log(`Parsing weekId: ${weekId}`);
+    const [yearStr, weekNumStr] = weekId.split("-W");
+    const weekYear = parseInt(yearStr);
+    const weekNumber = parseInt(weekNumStr);
+    console.log(`Parsed year: ${weekYear}, week number: ${weekNumber}`);
+
+    const weekStart = luxon.DateTime.fromObject({
+      weekYear: weekYear,
+      weekNumber: weekNumber,
+    });
+
+    // Vérifier la validité de l'objet DateTime après parsing
+    if (!weekStart.isValid) {
+      console.error(
+        "Invalid weekId format or Luxon parsing issue:",
+        weekId,
+        weekStart.errors
+      );
+      showMessage(
+        "Erreur: Impossible de parser la semaine pour les détails.",
+        "error",
+        modifyAbsenceMessage
+      );
+      absenceDetailsModal.style.display = "flex";
+      return;
+    }
+
+    // Pour obtenir l'intervalle d'une semaine complète, utiliser le début de la semaine actuelle
+    // et le début de la semaine suivante.
+    const nextWeekStart = weekStart.plus({ weeks: 1 });
+    const weekInterval = luxon.Interval.fromDateTimes(weekStart, nextWeekStart);
 
     // Filtrer les absences qui appartiennent à cette squad ET chevauchent cette semaine
     const relevantAbsences = allAbsences.filter((abs) => {
@@ -443,12 +475,13 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!absSquad || absSquad.name !== squadName) {
         return false;
       }
-      const absStart = DateTime.fromISO(abs.start_date);
-      const absEnd = DateTime.fromISO(abs.end_date);
-      const absenceInterval = Interval.fromDateTimes(
+      const absStart = luxon.DateTime.fromISO(abs.start_date);
+      const absEnd = luxon.DateTime.fromISO(abs.end_date);
+      // Inclure le jour de fin dans l'intervalle d'absence pour un chevauchement correct
+      const absenceInterval = luxon.Interval.fromDateTimes(
         absStart,
         absEnd.plus({ days: 1 })
-      ); // Inclure le jour de fin
+      );
       return weekInterval.overlaps(absenceInterval);
     });
 

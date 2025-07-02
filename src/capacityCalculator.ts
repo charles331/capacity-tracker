@@ -1,6 +1,5 @@
 // src/capacityCalculator.ts
 import { DateTime, Interval } from "luxon";
-// IMPORTS MANQUANTS AJOUTÉS ICI
 import { Squad, Member, AbsenceWithDetails, WeekCapacity } from "./types";
 
 const ABSENCE_THRESHOLD_PERCENT = 50; // Seuil d'alerte pour le pourcentage d'absence
@@ -36,10 +35,14 @@ export function calculateWeeklyCapacity(
   // Itérer sur chaque semaine pour la période définie
   for (let i = 0; i < numWeeksAhead; i++) {
     const currentWeekStart = today.plus({ weeks: i }).startOf("week"); // Début de la semaine (lundi)
-    const currentWeekEnd = currentWeekStart.endOf("week"); // Fin de la semaine (dimanche)
-    const weekId = currentWeekStart.toFormat("yyyy-W"); // Format de l'ID de semaine (ex: "2025-W28")
+
+    // CORRECTION CLÉ ICI: Construire manuellement le weekId pour garantir le format "yyyy-WNN"
+    const weekId = `${currentWeekStart.weekYear}-W${currentWeekStart.weekNumber
+      .toString()
+      .padStart(2, "0")}`;
 
     // Créer un intervalle pour la semaine actuelle
+    const currentWeekEnd = currentWeekStart.endOf("week"); // Fin de la semaine (dimanche)
     const currentWeekInterval = Interval.fromDateTimes(
       currentWeekStart,
       currentWeekEnd
