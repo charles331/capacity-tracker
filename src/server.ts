@@ -12,20 +12,18 @@ import {
   deleteMember,
   getMembersBySquad,
   getMemberById,
+  getAbsenceByIdWithDetails,
+  updateAbsence,
 } from "./database";
 import { calculateWeeklyCapacity } from "./capacityCalculator";
-import { Absence, Squad, Member } from "./types"; // Import des types nécessaires
+import { Absence, Squad, Member } from "./types";
 
 const app = express();
-const PORT = 3000; // Port sur lequel le serveur écoutera
+const PORT = 3000;
 
-// Middleware pour parser les corps de requête JSON
 app.use(express.json());
-
-// Servir les fichiers statiques du frontend (HTML, CSS, JS) depuis le dossier 'public'
 app.use(express.static(path.join(__dirname, "../public")));
 
-// Initialise la base de données au démarrage du serveur
 initDb();
 
 // --- Routes API pour la gestion des Absences ---
@@ -37,20 +35,15 @@ initDb();
 app.post("/api/absences", async (req: Request, res: Response) => {
   try {
     const { member_id, start_date, end_date } = req.body;
-
-    // Validation des champs requis
     if (!member_id || !start_date || !end_date) {
       return res
         .status(400)
         .send("Missing required fields: member_id, start_date, end_date.");
     }
-
-    // Vérifier si le membre existe avant d'ajouter l'absence
     const member = getMemberById(member_id);
     if (!member) {
       return res.status(404).send("Member not found.");
     }
-
     const newAbsence: Omit<Absence, "id"> = { member_id, start_date, end_date };
     const id = addAbsence(newAbsence);
     res.status(201).json({ id, message: "Absence added successfully." });
@@ -60,26 +53,77 @@ app.post("/api/absences", async (req: Request, res: Response) => {
   }
 });
 
-// --- Routes API pour la gestion de la Capacité ---
+/**
+ * NOUVELLE ROUTE (déplacée) : Route GET pour obtenir toutes les absences avec les détails complets.
+ * Cette route doit être définie AVANT les routes avec des paramètres dynamiques comme /:id.
+ */
+app.get("/api/absences/all", (req: Request, res: Response) => {
+  try {
+    const absences = getAllAbsencesWithDetails();
+    res.json(absences);
+  } catch (error: any) {
+    console.error("Error fetching all absences with details:", error);
+    res.status(500).send(`Error fetching all absences: ${error.message}`);
+  }
+});
 
 /**
- * Route GET pour obtenir le rapport de capacité hebdomadaire.
- * Calcule le pourcentage d'absence pour chaque squad semaine par semaine.
+ * Route PUT pour modifier une absence existante.
+ * Le corps de la requête doit contenir les nouvelles dates de début et de fin.
  */
+app.put("/api/absences/:id", (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { start_date, end_date } = req.body;
+
+    if (isNaN(id) || !start_date || !end_date) {
+      return res.status(400).send("Invalid absence ID or missing date fields.");
+    }
+
+    const changes = updateAbsence(id, start_date, end_date);
+    if (changes === 0) {
+      return res.status(404).send("Absence not found or no changes made.");
+    }
+    res.status(200).json({ message: "Absence updated successfully." });
+  } catch (error: any) {
+    console.error("Error updating absence:", error);
+    res.status(500).send(`Error updating absence: ${error.message}`);
+  }
+});
+
+/**
+ * Route GET pour obtenir une absence spécifique avec les détails du membre et de la squad.
+ * (Doit être après /api/absences/all)
+ */
+app.get("/api/absences/:id", (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).send("Invalid absence ID.");
+    }
+    const absence = getAbsenceByIdWithDetails(id);
+    if (!absence) {
+      return res.status(404).send("Absence not found.");
+    }
+    res.json(absence);
+  } catch (error: any) {
+    console.error("Error fetching absence by ID:", error);
+    res.status(500).send(`Error fetching absence: ${error.message}`);
+  }
+});
+
+// --- Routes API pour la gestion de la Capacité ---
+
 app.get("/api/capacity", (req: Request, res: Response) => {
   try {
-    const squads = getAllSquads(); // Récupère toutes les squads
-
-    // Récupère tous les membres pour le calcul de capacité
+    const squads = getAllSquads();
     const allMembers: Member[] = [];
     squads.forEach((squad) => {
       const membersInSquad = getMembersBySquad(squad.id);
       allMembers.push(...membersInSquad);
     });
 
-    const absences = getAllAbsencesWithDetails(); // Récupère toutes les absences avec les détails nécessaires
-
-    // Calcule la capacité en passant les squads, tous les membres et les absences
+    const absences = getAllAbsencesWithDetails();
     const capacity = calculateWeeklyCapacity(squads, allMembers, absences);
     res.json(capacity);
   } catch (error: any) {
@@ -90,9 +134,6 @@ app.get("/api/capacity", (req: Request, res: Response) => {
 
 // --- Routes API pour la gestion des Squads ---
 
-/**
- * Route GET pour obtenir toutes les squads.
- */
 app.get("/api/squads", (req: Request, res: Response) => {
   try {
     const squads = getAllSquads();
@@ -103,10 +144,6 @@ app.get("/api/squads", (req: Request, res: Response) => {
   }
 });
 
-/**
- * Route POST pour ajouter une nouvelle squad.
- * Le corps de la requête doit contenir le nom de la squad.
- */
 app.post("/api/squads", (req: Request, res: Response) => {
   try {
     const { name } = req.body;
@@ -117,7 +154,6 @@ app.post("/api/squads", (req: Request, res: Response) => {
     res.status(201).json({ id, name, message: "Squad added successfully." });
   } catch (error: any) {
     console.error("Error adding squad:", error);
-    // Gérer l'erreur de contrainte UNIQUE (nom de squad déjà existant)
     if (error.message.includes("UNIQUE constraint failed")) {
       return res.status(409).send("Squad with this name already exists.");
     }
@@ -125,10 +161,6 @@ app.post("/api/squads", (req: Request, res: Response) => {
   }
 });
 
-/**
- * Route DELETE pour supprimer une squad par son ID.
- * La suppression en cascade des membres et absences est gérée par la base de données.
- */
 app.delete("/api/squads/:id", (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
@@ -139,7 +171,7 @@ app.delete("/api/squads/:id", (req: Request, res: Response) => {
     if (changes === 0) {
       return res.status(404).send("Squad not found.");
     }
-    res.status(204).send(); // 204 No Content pour une suppression réussie
+    res.status(204).send();
   } catch (error: any) {
     console.error("Error deleting squad:", error);
     res.status(500).send(`Error deleting squad: ${error.message}`);
@@ -148,17 +180,12 @@ app.delete("/api/squads/:id", (req: Request, res: Response) => {
 
 // --- Routes API pour la gestion des Membres ---
 
-/**
- * Route POST pour ajouter un nouveau membre à une squad.
- * Le corps de la requête doit contenir l'ID de la squad et le nom du membre.
- */
 app.post("/api/members", (req: Request, res: Response) => {
   try {
     const { squad_id, name } = req.body;
     if (!squad_id || !name) {
       return res.status(400).send("Missing squad ID or member name.");
     }
-    // Vérifier si la squad existe avant d'ajouter le membre
     const squadExists = getAllSquads().some((s) => s.id === squad_id);
     if (!squadExists) {
       return res.status(404).send("Squad not found.");
@@ -174,10 +201,6 @@ app.post("/api/members", (req: Request, res: Response) => {
   }
 });
 
-/**
- * Route DELETE pour supprimer un membre par son ID.
- * La suppression en cascade des absences est gérée par la base de données.
- */
 app.delete("/api/members/:id", (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
@@ -188,16 +211,13 @@ app.delete("/api/members/:id", (req: Request, res: Response) => {
     if (changes === 0) {
       return res.status(404).send("Member not found.");
     }
-    res.status(204).send(); // 204 No Content pour une suppression réussie
+    res.status(204).send();
   } catch (error: any) {
     console.error("Error deleting member:", error);
     res.status(500).send(`Error deleting member: ${error.message}`);
   }
 });
 
-/**
- * Route GET pour obtenir tous les membres d'une squad spécifique.
- */
 app.get("/api/squads/:squadId/members", (req: Request, res: Response) => {
   try {
     const squadId = parseInt(req.params.squadId);

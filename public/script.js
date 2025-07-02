@@ -7,6 +7,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const endDateInput = document.getElementById("endDate");
   const formMessage = document.getElementById("formMessage"); // Message pour le formulaire d'absence
 
+  // Récupération des éléments du DOM pour la modification d'absence
+  const modifyAbsenceForm = document.getElementById("modifyAbsenceForm");
+  const modifyAbsenceSelect = document.getElementById("modifyAbsenceSelect");
+  const modifyStartDateInput = document.getElementById("modifyStartDate");
+  const modifyEndDateInput = document.getElementById("modifyEndDate");
+  const modifyAbsenceMessage = document.getElementById("modifyAbsenceMessage");
+
   // Récupération des éléments du DOM pour la gestion des squads
   const addSquadForm = document.getElementById("addSquadForm");
   const newSquadNameInput = document.getElementById("newSquadName");
@@ -29,8 +36,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const loadingMessage = document.getElementById("loadingMessage");
 
   // Variables pour stocker les données récupérées de l'API
-  let squads = []; // Toutes les squads
-  let members = []; // Tous les membres (utilisé pour le sélecteur d'absence et le calcul de capacité)
+  let squads = [];
+  let members = [];
+  let allAbsences = [];
 
   // --- Fonctions Utilitaires ---
 
@@ -46,19 +54,42 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
       targetElement.textContent = "";
       targetElement.className = "message";
-    }, 5000); // Le message disparaît après 5 secondes
+    }, 5000);
   }
 
   /**
-   * Charge toutes les données nécessaires (squads, membres, heatmap) et rafraîchit l'interface.
-   * Cette fonction est appelée après chaque modification (ajout/suppression).
+   * Gère la bascule d'affichage/masquage des cartes.
+   * @param {HTMLElement} header L'en-tête de la carte cliquée.
+   */
+  function toggleCard(header) {
+    const targetId = header.dataset.target;
+    const content = document.getElementById(targetId);
+    const icon = header.querySelector(".toggle-icon");
+
+    if (content && icon) {
+      content.classList.toggle("hidden");
+      // Mettre à jour l'attribut aria-expanded pour l'accessibilité
+      const isExpanded = !content.classList.contains("hidden");
+      header.setAttribute("aria-expanded", isExpanded.toString());
+
+      if (content.classList.contains("hidden")) {
+        icon.textContent = "+";
+      } else {
+        icon.textContent = "-";
+      }
+    }
+  }
+
+  /**
+   * Charge toutes les données nécessaires (squads, membres, absences, heatmap) et rafraîchit l'interface.
+   * Cette fonction est appelée après chaque modification (ajout/suppression/modification).
    */
   async function loadAllData() {
-    await loadSquads(); // Charge les squads pour tous les sélecteurs et listes
-    await loadAllMembersForAbsenceForm(); // Charge tous les membres pour le formulaire d'absence
-    // Charge les membres pour la section de gestion des membres de la squad actuellement sélectionnée
+    await loadSquads();
+    await loadAllMembersForAbsenceForm();
+    await loadAbsencesForModification();
     await loadMembersForManagement(manageMembersSquadSelect.value);
-    generateHeatmap(); // Génère la heatmap
+    generateHeatmap();
   }
 
   /**
@@ -69,7 +100,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const response = await fetch("/api/squads");
       squads = await response.json();
 
-      // --- Mise à jour du sélecteur de squad pour la gestion des membres ---
+      // Mise à jour du sélecteur de squad pour la gestion des membres
       manageMembersSquadSelect.innerHTML = "";
       if (squads.length === 0) {
         manageMembersSquadSelect.innerHTML =
@@ -81,13 +112,12 @@ document.addEventListener("DOMContentLoaded", () => {
           option.textContent = squad.name;
           manageMembersSquadSelect.appendChild(option);
         });
-        // Déclenche le chargement des membres pour la première squad par défaut si elle existe
         if (manageMembersSquadSelect.value) {
           loadMembersForManagement(manageMembersSquadSelect.value);
         }
       }
 
-      // --- Mise à jour de la liste de gestion des squads ---
+      // Mise à jour de la liste de gestion des squads
       squadList.innerHTML = "";
       if (squads.length === 0) {
         squadList.innerHTML = "<li>Aucune équipe enregistrée.</li>";
@@ -118,20 +148,24 @@ document.addEventListener("DOMContentLoaded", () => {
         "error",
         memberListMessage
       );
+      showMessage(
+        "Erreur lors du chargement des équipes.",
+        "error",
+        modifyAbsenceMessage
+      );
     }
   }
 
   /**
    * Charge tous les membres pour le sélecteur d'absence.
-   * Cela permet de sélectionner un membre de n'importe quelle squad pour une absence.
    */
   async function loadAllMembersForAbsenceForm() {
-    memberSelect.innerHTML = ""; // Vide les options existantes
-    memberSelect.disabled = true; // Désactive le sélecteur pendant le chargement
+    memberSelect.innerHTML = "";
+    memberSelect.disabled = true;
 
     try {
       const allSquads = await (await fetch("/api/squads")).json();
-      members = []; // Réinitialise la liste globale des membres
+      members = [];
 
       if (allSquads.length === 0) {
         memberSelect.innerHTML =
@@ -139,12 +173,10 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // Pour chaque squad, récupérer ses membres et les ajouter à la liste globale
       for (const squad of allSquads) {
         const response = await fetch(`/api/squads/${squad.id}/members`);
         const squadMembers = await response.json();
         squadMembers.forEach((member) => {
-          // Ajoute le nom de la squad au membre pour un affichage clair dans le sélecteur
           members.push({ ...member, squadName: squad.name });
         });
       }
@@ -153,7 +185,6 @@ document.addEventListener("DOMContentLoaded", () => {
         memberSelect.innerHTML =
           '<option value="">Aucun membre disponible</option>';
       } else {
-        // Trie les membres par nom de squad puis par nom de membre pour un affichage ordonné
         members.sort((a, b) => {
           if (a.squadName < b.squadName) return -1;
           if (a.squadName > b.squadName) return 1;
@@ -165,10 +196,10 @@ document.addEventListener("DOMContentLoaded", () => {
         members.forEach((member) => {
           const option = document.createElement("option");
           option.value = member.id;
-          option.textContent = `${member.name} (${member.squadName})`; // Ex: "Jean Dupont (Alpha)"
+          option.textContent = `${member.name} (${member.squadName})`;
           memberSelect.appendChild(option);
         });
-        memberSelect.disabled = false; // Réactive le sélecteur
+        memberSelect.disabled = false;
       }
     } catch (error) {
       console.error(
@@ -185,11 +216,67 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /**
+   * Charge toutes les absences pour le sélecteur de modification d'absence.
+   */
+  async function loadAbsencesForModification() {
+    modifyAbsenceSelect.innerHTML = "";
+    modifyAbsenceSelect.disabled = true;
+    modifyStartDateInput.value = "";
+    modifyEndDateInput.value = "";
+
+    try {
+      const response = await fetch("/api/absences/all");
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Server error: ${response.status} ${response.statusText} - ${errorText}`
+        );
+      }
+
+      allAbsences = await response.json();
+
+      if (allAbsences.length === 0) {
+        modifyAbsenceSelect.innerHTML =
+          '<option value="">Aucune absence à modifier</option>';
+      } else {
+        allAbsences.sort(
+          (a, b) =>
+            new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+        );
+        allAbsences.forEach((abs) => {
+          const option = document.createElement("option");
+          option.value = abs.id;
+          option.textContent = `${abs.member_name} (${abs.squad_name}) du ${abs.start_date} au ${abs.end_date}`;
+          modifyAbsenceSelect.appendChild(option);
+        });
+        modifyAbsenceSelect.disabled = false;
+        if (allAbsences.length > 0) {
+          modifyStartDateInput.value = allAbsences[0].start_date;
+          modifyEndDateInput.value = allAbsences[0].end_date;
+        }
+      }
+    } catch (error) {
+      console.error(
+        "Erreur lors du chargement des absences pour modification:",
+        error
+      );
+      showMessage(
+        `Erreur lors du chargement des absences à modifier: ${error.message}`,
+        "error",
+        modifyAbsenceMessage
+      );
+      modifyAbsenceSelect.innerHTML =
+        '<option value="">Erreur de chargement</option>';
+    }
+  }
+
+  /**
    * Charge les membres pour la section de gestion des membres d'une squad spécifique.
    * @param {string} squadId L'ID de la squad dont les membres doivent être chargés.
    */
   async function loadMembersForManagement(squadId) {
-    memberList.innerHTML = ""; // Nettoyer la liste des membres
+    memberList.innerHTML = "";
     if (!squadId) {
       memberList.innerHTML =
         "<li>Sélectionnez une équipe pour voir les membres.</li>";
@@ -229,14 +316,14 @@ document.addEventListener("DOMContentLoaded", () => {
    * Génère et affiche la heatmap de capacité des équipes.
    */
   async function generateHeatmap() {
-    heatmapContainer.innerHTML = ""; // Nettoyer le contenu précédent de la heatmap
-    loadingMessage.style.display = "block"; // Afficher le message de chargement
+    heatmapContainer.innerHTML = "";
+    loadingMessage.style.display = "block";
 
     try {
       const response = await fetch("/api/capacity");
       const capacityData = await response.json();
 
-      loadingMessage.style.display = "none"; // Cacher le message de chargement
+      loadingMessage.style.display = "none";
 
       if (capacityData.length === 0) {
         heatmapContainer.innerHTML =
@@ -244,7 +331,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // Extraire les identifiants de semaine uniques et les noms de squads uniques
       const weekIds = Array.from(
         new Set(capacityData.map((d) => d.weekId))
       ).sort();
@@ -252,10 +338,8 @@ document.addEventListener("DOMContentLoaded", () => {
         new Set(capacityData.map((d) => d.squadName))
       ).sort();
 
-      // Configurer la grille CSS pour la heatmap: une colonne auto pour les noms de squad, puis une colonne pour chaque semaine
       heatmapContainer.style.gridTemplateColumns = `auto repeat(${weekIds.length}, 1fr)`;
 
-      // --- Création des en-têtes de la Heatmap (Semaines) ---
       const cornerHeader = document.createElement("div");
       cornerHeader.className = "heatmap-header";
       cornerHeader.textContent = "Équipe \\ Semaine";
@@ -268,22 +352,17 @@ document.addEventListener("DOMContentLoaded", () => {
         heatmapContainer.appendChild(header);
       });
 
-      // --- Création des lignes de la Heatmap (Squads) ---
       squadNames.forEach((squadName) => {
-        // En-tête de ligne (nom de la squad)
         const rowHeader = document.createElement("div");
         rowHeader.className = "heatmap-row-header";
         rowHeader.textContent = squadName;
         heatmapContainer.appendChild(rowHeader);
 
-        // Trouver la squad pour obtenir son ID et ensuite le nombre total de membres
         const currentSquad = squads.find((s) => s.name === squadName);
-        // Filtrer les membres globaux pour obtenir ceux de la squad actuelle
         const totalMembersInSquad = members.filter(
           (m) => m.squad_id === currentSquad?.id
         ).length;
 
-        // Création des cellules pour chaque semaine
         weekIds.forEach((weekId) => {
           const cellData = capacityData.find(
             (d) => d.squadName === squadName && d.weekId === weekId
@@ -293,19 +372,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
           if (cellData) {
             cell.textContent = `${cellData.percentageAbsence}%`;
-            // Applique la classe CSS appropriée en fonction du pourcentage d'absence
             if (totalMembersInSquad === 0) {
-              // Si l'équipe a 0 membre, pas d'alerte pertinente, couleur grise
               cell.classList.add("capacity-unknown");
             } else if (cellData.alert) {
-              cell.classList.add("capacity-high"); // Rouge (>50%)
+              cell.classList.add("capacity-high");
             } else if (cellData.percentageAbsence > 25) {
-              cell.classList.add("capacity-medium"); // Jaune (25-50%)
+              cell.classList.add("capacity-medium");
             } else {
-              cell.classList.add("capacity-low"); // Vert (0-25%)
+              cell.classList.add("capacity-low");
             }
           } else {
-            cell.textContent = "N/A"; // Si aucune donnée pour cette cellule
+            cell.textContent = "N/A";
             cell.classList.add("capacity-unknown");
           }
           heatmapContainer.appendChild(cell);
@@ -326,15 +403,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- Gestionnaires d'Événements ---
 
+  // Gestionnaires de bascule pour toutes les cartes
+  document.querySelectorAll(".card-header").forEach((header) => {
+    header.addEventListener("click", () => toggleCard(header));
+  });
+
   // Formulaire d'ajout d'absence
   addAbsenceForm.addEventListener("submit", async (event) => {
-    event.preventDefault(); // Empêche le rechargement de la page
+    event.preventDefault();
 
-    const memberId = parseInt(memberSelect.value); // Récupère l'ID du membre sélectionné
+    const memberId = parseInt(memberSelect.value);
     const startDate = startDateInput.value;
     const endDate = endDateInput.value;
 
-    // Validation côté client
     if (!memberId || !startDate || !endDate) {
       showMessage("Veuillez remplir tous les champs.", "error", formMessage);
       return;
@@ -361,8 +442,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (response.ok) {
         showMessage("Absence ajoutée avec succès !", "success", formMessage);
-        addAbsenceForm.reset(); // Réinitialise le formulaire
-        loadAllData(); // Recharge toutes les données pour rafraîchir l'interface
+        addAbsenceForm.reset();
+        loadAllData();
       } else {
         const errorData = await response.text();
         showMessage(
@@ -377,6 +458,78 @@ document.addEventListener("DOMContentLoaded", () => {
         error
       );
       showMessage("Erreur de connexion au serveur.", "error", formMessage);
+    }
+  });
+
+  // Gestion du changement de sélection dans le formulaire de modification d'absence
+  modifyAbsenceSelect.addEventListener("change", (event) => {
+    const selectedAbsenceId = parseInt(event.target.value);
+    const selectedAbsence = allAbsences.find(
+      (abs) => abs.id === selectedAbsenceId
+    );
+    if (selectedAbsence) {
+      modifyStartDateInput.value = selectedAbsence.start_date;
+      modifyEndDateInput.value = selectedAbsence.end_date;
+    }
+  });
+
+  // Formulaire de modification d'absence
+  modifyAbsenceForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const absenceId = parseInt(modifyAbsenceSelect.value);
+    const startDate = modifyStartDateInput.value;
+    const endDate = modifyEndDateInput.value;
+
+    if (!absenceId || !startDate || !endDate) {
+      showMessage(
+        "Veuillez sélectionner une absence et entrer des dates.",
+        "error",
+        modifyAbsenceMessage
+      );
+      return;
+    }
+    if (new Date(startDate) > new Date(endDate)) {
+      showMessage(
+        "La nouvelle date de fin ne peut pas être antérieure à la nouvelle date de début.",
+        "error",
+        modifyAbsenceMessage
+      );
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/absences/${absenceId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ start_date: startDate, end_date: endDate }),
+      });
+
+      if (response.ok) {
+        showMessage(
+          "Absence modifiée avec succès !",
+          "success",
+          modifyAbsenceMessage
+        );
+        loadAllData();
+      } else {
+        const errorData = await response.text();
+        showMessage(
+          `Erreur lors de la modification de l'absence: ${errorData}`,
+          "error",
+          modifyAbsenceMessage
+        );
+      }
+    } catch (error) {
+      console.error(
+        "Erreur réseau ou du serveur lors de la modification d'absence:",
+        error
+      );
+      showMessage(
+        "Erreur de connexion au serveur.",
+        "error",
+        modifyAbsenceMessage
+      );
     }
   });
 
@@ -401,7 +554,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (response.ok) {
         showMessage("Équipe ajoutée avec succès !", "success", addSquadMessage);
         addSquadForm.reset();
-        loadAllData(); // Recharge toutes les données
+        loadAllData();
       } else {
         const errorData = await response.text();
         showMessage(
@@ -422,7 +575,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // Gestion de la suppression de squad (délégation d'événement)
   squadList.addEventListener("click", async (event) => {
     const target = event.target;
-    // Vérifie si le clic provient d'un bouton de suppression de squad
     if (
       target &&
       target instanceof HTMLElement &&
@@ -434,7 +586,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // Demande de confirmation avant suppression
       if (
         !confirm(
           `Êtes-vous sûr de vouloir supprimer cette équipe (ID: ${squadId}) ? Tous les membres et absences associés seront également supprimés.`
@@ -454,7 +605,7 @@ document.addEventListener("DOMContentLoaded", () => {
             "success",
             squadListMessage
           );
-          loadAllData(); // Recharge toutes les données
+          loadAllData();
         } else {
           const errorData = await response.text();
           showMessage(
@@ -480,14 +631,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // Gestion du changement de sélection de squad pour la gestion des membres
   manageMembersSquadSelect.addEventListener("change", (event) => {
     const selectedSquadId = event.target.value;
-    loadMembersForManagement(selectedSquadId); // Recharge la liste des membres pour la squad sélectionnée
+    loadMembersForManagement(selectedSquadId);
   });
 
   // Formulaire d'ajout de membre
   addMemberForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    const squadId = parseInt(manageMembersSquadSelect.value); // Squad sélectionnée
+    const squadId = parseInt(manageMembersSquadSelect.value);
     const memberName = newMemberNameInput.value.trim();
 
     if (!squadId || !memberName) {
@@ -508,8 +659,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (response.ok) {
         showMessage("Membre ajouté avec succès !", "success", addMemberMessage);
-        newMemberNameInput.value = ""; // Réinitialise le champ du nom du membre
-        loadAllData(); // Recharge toutes les données
+        newMemberNameInput.value = "";
+        loadAllData();
       } else {
         const errorData = await response.text();
         showMessage(
@@ -530,7 +681,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // Gestion de la suppression de membre (délégation d'événement)
   memberList.addEventListener("click", async (event) => {
     const target = event.target;
-    // Vérifie si le clic provient d'un bouton de suppression de membre
     if (
       target &&
       target instanceof HTMLElement &&
@@ -542,7 +692,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // Demande de confirmation avant suppression
       if (
         !confirm(
           `Êtes-vous sûr de vouloir supprimer ce membre (ID: ${memberId}) ? Toutes les absences associées seront également supprimées.`
@@ -562,7 +711,7 @@ document.addEventListener("DOMContentLoaded", () => {
             "success",
             memberListMessage
           );
-          loadAllData(); // Recharge toutes les données
+          loadAllData();
         } else {
           const errorData = await response.text();
           showMessage(
@@ -586,6 +735,5 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // --- Initialisation au Chargement de la Page ---
-  // Charge toutes les données initiales au chargement complet du DOM
   loadAllData();
 });

@@ -198,6 +198,24 @@ export function addAbsence(absence: Omit<Absence, "id">) {
 }
 
 /**
+ * Met à jour les dates de début et de fin d'une absence existante.
+ * @param id L'ID de l'absence à mettre à jour.
+ * @param startDate La nouvelle date de début.
+ * @param endDate La nouvelle date de fin.
+ * @returns Le nombre de lignes modifiées.
+ */
+export function updateAbsence(
+  id: number,
+  startDate: string,
+  endDate: string
+): number {
+  const info = db
+    .prepare("UPDATE absences SET start_date = ?, end_date = ? WHERE id = ?")
+    .run(startDate, endDate, id);
+  return info.changes;
+}
+
+/**
  * Récupère toutes les absences avec les détails des membres et des squads associés.
  * Effectue des jointures pour enrichir les données d'absence.
  * @returns Un tableau d'objets AbsenceWithDetails.
@@ -220,4 +238,32 @@ export function getAllAbsencesWithDetails(): AbsenceWithDetails[] {
   `
     )
     .all() as AbsenceWithDetails[];
+}
+
+/**
+ * Récupère une absence spécifique par son ID, avec les détails du membre et de la squad.
+ * @param id L'ID de l'absence à récupérer.
+ * @returns L'objet AbsenceWithDetails ou undefined si non trouvé.
+ */
+export function getAbsenceByIdWithDetails(
+  id: number
+): AbsenceWithDetails | undefined {
+  return db
+    .prepare(
+      `
+    SELECT
+      a.id,
+      a.member_id,
+      a.start_date,
+      a.end_date,
+      m.name AS member_name,
+      s.id AS squad_id,
+      s.name AS squad_name
+    FROM absences a
+    JOIN members m ON a.member_id = m.id
+    JOIN squads s ON m.squad_id = s.id
+    WHERE a.id = ?
+  `
+    )
+    .get(id) as AbsenceWithDetails | undefined;
 }

@@ -2,208 +2,276 @@
 
 /* Styles généraux du corps de la page */
 body {
-  font-family: Arial, sans-serif;
-  margin: 20px;
-  background-color: #f4f7f6; /* Couleur de fond légère */
-  color: #333; /* Couleur de texte principale */
+  font-family: "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif; /* Police plus moderne */
+  margin: 0; /* Réinitialise la marge par défaut du body */
+  padding: 20px; /* Ajoute un padding général */
+  background-color: #eef2f5; /* Fond clair et moderne */
+  color: #333;
+  line-height: 1.6;
 }
 
 /* Conteneur principal de l'application */
 .container {
-  max-width: 1200px; /* Largeur maximale pour un affichage agréable */
-  margin: 0 auto; /* Centrage horizontal */
-  background-color: #fff; /* Fond blanc pour le contenu */
+  max-width: 1200px;
+  margin: 20px auto; /* Marge supérieure/inférieure pour l'espacement */
+  background-color: #fff;
   padding: 30px;
-  border-radius: 8px; /* Coins arrondis */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Légère ombre pour la profondeur */
+  border-radius: 12px; /* Coins plus arrondis */
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1); /* Ombre plus prononcée */
 }
 
 /* Styles des titres */
-h1,
-h2,
-h3 {
-  color: #0056b3; /* Bleu foncé pour les titres */
+h1 {
+  color: #0056b3;
   text-align: center;
-  margin-bottom: 25px;
+  margin-bottom: 30px;
+  font-size: 2.2em; /* Taille de police plus grande */
+  font-weight: 600; /* Gras moyen */
 }
 
-/* Section de formulaire générique */
-.form-section {
-  margin-bottom: 40px;
-  padding: 20px;
-  border: 1px solid #ddd; /* Bordure légère */
-  border-radius: 5px;
-  background-color: #f9f9f9; /* Fond légèrement grisé */
+h2 {
+  color: #0056b3;
+  text-align: left; /* Aligné à gauche dans les cartes */
+  margin-bottom: 0; /* Pas de marge en bas pour les titres de carte */
+  font-size: 1.6em;
+  font-weight: 500;
 }
 
-/* Espacement pour les éléments de formulaire */
-#addAbsenceForm div,
-#addSquadForm div,
-#addMemberForm div,
-.member-management > div {
+h3 {
+  color: #4a4a4a;
+  text-align: center;
+  margin-top: 20px;
+  margin-bottom: 15px;
+  font-size: 1.2em;
+  font-weight: 500;
+}
+
+/* --- Styles des Cartes --- */
+.card {
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  margin-bottom: 25px; /* Espacement entre les cartes */
+  overflow: hidden; /* Important pour les transitions de hauteur */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.card-header {
+  background-color: #f0f5f8; /* Fond de l'en-tête de carte */
+  padding: 15px 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer; /* Indique que l'en-tête est cliquable */
+  border-bottom: 1px solid #e0e0e0;
+  transition: background-color 0.3s ease;
+}
+
+.card-header:hover {
+  background-color: #e5edf2;
+}
+
+.card-header h2 {
+  margin: 0; /* Annule la marge par défaut pour h2 dans l'en-tête */
+  color: #333; /* Couleur de titre plus neutre dans l'en-tête */
+}
+
+.toggle-icon {
+  font-size: 1.8em;
+  font-weight: bold;
+  color: #007bff;
+  transition: transform 0.3s ease; /* Animation pour l'icône */
+}
+
+/* Styles pour le contenu de la carte (état ouvert par défaut) */
+.card-content {
+  max-height: 1000px; /* Hauteur suffisante pour afficher le contenu, ajustez si nécessaire */
+  padding: 25px; /* Padding complet quand ouvert */
+  overflow: hidden;
+  transition: max-height 0.4s ease-out, padding 0.4s ease-out; /* Transition pour l'ouverture/fermeture */
+}
+
+/* État masqué : lorsque la classe 'hidden' est présente */
+.card-content.hidden {
+  max-height: 0;
+  padding: 0 25px; /* Réduit le padding vertical à 0 */
+}
+
+/* Rotation de l'icône : l'icône est un enfant direct du header */
+.card-header[aria-expanded="true"] .toggle-icon {
+  transform: rotate(45deg); /* Tourne le '+' en 'x' quand ouvert */
+}
+/* Note: Le JS change le texte de l'icône de '+' à '-' et vice-versa.
+   La rotation est un bonus visuel si le texte était toujours '+'.
+   Avec le texte qui change, la rotation est moins essentielle mais peut rester. */
+
+/* --- Styles des formulaires et listes --- */
+/* Ces styles s'appliquent aux éléments DANS le card-content */
+.card-content form > div, /* Cible les divs directes des formulaires dans les cartes */
+.card-content .squad-management > div,
+.card-content .member-management > div {
   margin-bottom: 15px;
 }
 
-/* Styles des labels de formulaire */
-#addAbsenceForm label,
-#addSquadForm label,
-#addMemberForm label,
-.member-management label {
-  display: block; /* Chaque label sur sa propre ligne */
+label {
+  display: block;
   margin-bottom: 5px;
-  font-weight: bold;
+  font-weight: 600; /* Plus gras */
+  color: #555;
 }
 
-/* Styles des champs de saisie et des sélecteurs */
-#addAbsenceForm input[type="text"],
-#addAbsenceForm input[type="date"],
-#addAbsenceForm select,
-#addSquadForm input[type="text"],
-#addSquadForm input[type="number"],
-#addMemberForm input[type="text"],
-#manageMembersSquadSelect {
+input[type="text"],
+input[type="date"],
+input[type="number"],
+select {
   width: calc(100% - 22px); /* Largeur pleine moins le padding */
-  padding: 10px;
+  padding: 12px; /* Plus de padding */
   border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 16px;
+  border-radius: 6px; /* Coins plus arrondis */
+  font-size: 1em;
+  box-sizing: border-box; /* Inclut padding et border dans la largeur */
 }
 
-/* Styles des boutons */
-#addAbsenceForm button,
-#addSquadForm button,
-#addMemberForm button,
-.delete-squad-btn,
-.delete-member-btn {
-  background-color: #007bff; /* Bleu primaire */
+button {
+  background-color: #007bff;
   color: white;
-  padding: 10px 15px;
+  padding: 12px 25px; /* Plus de padding */
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.3s ease; /* Transition douce au survol */
-  margin-top: 5px;
+  font-size: 1.1em; /* Texte plus grand */
+  font-weight: 600;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  margin-top: 10px; /* Plus d'espace au-dessus */
 }
 
-/* Effet de survol pour les boutons */
-#addAbsenceForm button:hover,
-#addSquadForm button:hover,
-#addMemberForm button:hover {
-  background-color: #0056b3; /* Bleu plus foncé au survol */
+button:hover {
+  background-color: #0056b3;
+  transform: translateY(-2px); /* Léger effet de soulèvement */
 }
 
-/* Styles des messages d'information/erreur */
 .message {
-  margin-top: 15px;
-  padding: 10px;
-  border-radius: 4px;
+  margin-top: 20px; /* Plus de marge */
+  padding: 12px;
+  border-radius: 6px;
   font-weight: bold;
   text-align: center;
+  font-size: 0.95em;
 }
 .message.success {
-  background-color: #d4edda; /* Vert clair pour le succès */
-  color: #155724; /* Texte vert foncé */
-  border-color: #c3e6cb;
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
 }
 .message.error {
-  background-color: #f8d7da; /* Rouge clair pour l'erreur */
-  color: #721c24; /* Texte rouge foncé */
-  border-color: #f5c6cb;
-}
-
-/* Styles spécifiques pour les sections de gestion (squads et membres) */
-.squad-management,
-.member-management {
-  margin-top: 20px;
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
 }
 
 /* Styles des listes de squads et de membres */
 #squadList,
 #memberList {
-  list-style: none; /* Supprime les puces de liste */
+  list-style: none;
   padding: 0;
   margin-top: 20px;
 }
 
 #squadList li,
 #memberList li {
-  background-color: #e9ecef; /* Fond gris clair pour les éléments de liste */
-  padding: 10px 15px;
+  background-color: #f8f9fa; /* Fond très clair */
+  padding: 12px 18px;
   margin-bottom: 8px;
-  border-radius: 4px;
-  display: flex; /* Utilisation de flexbox pour aligner nom et bouton */
-  justify-content: space-between; /* Espacement entre le nom et le bouton */
-  align-items: center; /* Alignement vertical */
-  font-size: 1.1em;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1em;
+  border: 1px solid #eee;
 }
 
-/* Styles des boutons de suppression (squads et membres) */
 .delete-squad-btn,
 .delete-member-btn {
-  background-color: #dc3545; /* Rouge vif pour la suppression */
+  background-color: #dc3545; /* Rouge pour supprimer */
   padding: 8px 12px;
-  font-size: 0.9em;
+  font-size: 0.85em; /* Texte plus petit */
+  font-weight: 500;
 }
 
 .delete-squad-btn:hover,
 .delete-member-btn:hover {
-  background-color: #c82333; /* Rouge plus foncé au survol */
+  background-color: #c82333;
+  transform: translateY(-1px);
 }
 
-/* Section de la heatmap */
+/* --- Styles de la Heatmap --- */
 .heatmap-section {
-  margin-top: 40px;
-  overflow-x: auto; /* Permet le défilement horizontal si la heatmap est trop large */
+  margin-bottom: 40px; /* Espace après la heatmap */
+  overflow-x: auto;
+  padding: 20px; /* Padding interne pour la section */
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-/* Conteneur de la heatmap (utilisé comme grille CSS) */
+.heatmap-section h2 {
+  text-align: center; /* Centrer le titre de la heatmap */
+  margin-bottom: 25px;
+}
+
 #heatmap-container {
   display: grid;
-  /* grid-template-columns sera défini par JavaScript */
   border: 1px solid #ccc;
   border-radius: 5px;
-  min-width: 800px; /* Assure une largeur minimale pour les colonnes */
+  min-width: 800px;
+  overflow-x: auto; /* Permet le défilement interne de la grille si nécessaire */
 }
 
-/* Styles des en-têtes et des cellules de la heatmap */
 .heatmap-header,
 .heatmap-cell {
-  padding: 8px 5px;
+  padding: 10px 8px; /* Plus de padding */
   text-align: center;
-  border: 1px solid #eee; /* Bordures fines entre les cellules */
+  border: 1px solid #eee;
   font-size: 0.9em;
-  white-space: nowrap; /* Empêche le retour à la ligne pour les noms de semaines */
+  white-space: nowrap;
+  box-sizing: border-box; /* Inclut padding et border dans la taille */
 }
 
-/* Styles des en-têtes de colonne (semaines) */
 .heatmap-header {
-  background-color: #e0e0e0; /* Fond gris pour les en-têtes */
+  background-color: #e0e0e0;
   font-weight: bold;
 }
 
-/* Styles des en-têtes de ligne (squads) */
 .heatmap-row-header {
-  background-color: #f0f0f0; /* Fond légèrement plus clair */
+  background-color: #f0f0f0;
   font-weight: bold;
   text-align: left;
-  position: sticky; /* Fige la colonne des squads lors du défilement horizontal */
+  position: sticky;
   left: 0;
-  z-index: 10; /* Assure qu'il reste au-dessus des autres cellules */
+  z-index: 10;
+  padding: 10px 15px; /* Plus de padding pour les en-têtes de ligne */
 }
 
-/* Couleurs de la heatmap basées sur le pourcentage d'absence */
+/* Couleurs de la heatmap */
 .capacity-low {
-  background-color: #c8e6c9; /* Vert clair (0-25% d'absence) */
+  background-color: #d4edda; /* Vert clair */
+  color: #155724;
 }
 .capacity-medium {
-  background-color: #ffe082; /* Jaune (25-50% d'absence) */
+  background-color: #ffeeba; /* Jaune clair */
+  color: #856404;
 }
 .capacity-high {
-  background-color: #ef9a9a; /* Rouge clair (>50% d'absence - alerte) */
+  background-color: #f5c6cb; /* Rouge clair */
   font-weight: bold;
-  color: #a00; /* Texte rouge foncé pour l'alerte */
+  color: #721c24;
 }
 .capacity-unknown {
-  background-color: #bdbdbd; /* Gris pour les cas inconnus ou 0 membres */
+  background-color: #e9ecef; /* Gris très clair */
+  color: #6c757d;
 }
