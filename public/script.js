@@ -40,6 +40,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const absenceDetailsModal = document.getElementById("absenceDetailsModal");
   const closeButton = absenceDetailsModal.querySelector(".close-button");
   const modalSquadWeekTitle = document.getElementById("modalSquadWeekTitle");
+  const modalWeekRange = document.getElementById("modalWeekRange"); // Nouveau: pour la plage de dates de la semaine
+  const modalTeamMembers = document.getElementById("modalTeamMembers"); // Nouveau: pour le nombre de membres
+  const modalAbsencePercentage = document.getElementById(
+    "modalAbsencePercentage"
+  ); // NOUVEAU: pour le pourcentage d'absence
   const modalAbsenceList = document.getElementById("modalAbsenceList");
   const modalNoAbsencesMessage = document.getElementById(
     "modalNoAbsencesMessage"
@@ -49,6 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let squads = [];
   let members = [];
   let allAbsences = []; // Contiendra les AbsenceWithDetails
+  let capacityDataGlobal = []; // Stocke les données de capacité pour un accès facile
 
   // --- Fonctions Utilitaires ---
 
@@ -330,21 +336,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const response = await fetch("/api/capacity");
-      const capacityData = await response.json();
+      capacityDataGlobal = await response.json(); // Stocke les données globalement
 
       loadingMessage.style.display = "none";
 
-      if (capacityData.length === 0) {
+      if (capacityDataGlobal.length === 0) {
         heatmapContainer.innerHTML =
           "<p>Aucune donnée de capacité à afficher. Ajoutez des absences ou des équipes/membres !</p>";
         return;
       }
 
       const weekIds = Array.from(
-        new Set(capacityData.map((d) => d.weekId))
+        new Set(capacityDataGlobal.map((d) => d.weekId))
       ).sort();
       const squadNames = Array.from(
-        new Set(capacityData.map((d) => d.squadName))
+        new Set(capacityDataGlobal.map((d) => d.squadName))
       ).sort();
 
       heatmapContainer.style.gridTemplateColumns = `auto repeat(${weekIds.length}, 1fr)`;
@@ -373,7 +379,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ).length;
 
         weekIds.forEach((weekId) => {
-          const cellData = capacityData.find(
+          const cellData = capacityDataGlobal.find(
             (d) => d.squadName === squadName && d.weekId === weekId
           );
           const cell = document.createElement("div");
@@ -435,14 +441,16 @@ document.addEventListener("DOMContentLoaded", () => {
     modalSquadWeekTitle.textContent = `Absences pour ${squadName} - Semaine ${weekId}`;
     modalAbsenceList.innerHTML = ""; // Nettoyer la liste précédente
     modalNoAbsencesMessage.style.display = "none"; // Masquer le message "aucune absence"
+    modalWeekRange.textContent = ""; // Réinitialiser la plage de dates
+    modalTeamMembers.textContent = ""; // Réinitialiser le nombre de membres
+    modalAbsencePercentage.textContent = ""; // NOUVEAU: Réinitialiser le pourcentage d'absence
 
-    // CORRECTION CLÉ ICI : Parser l'année et le numéro de semaine séparément
-    console.log(`Parsing weekId: ${weekId}`);
+    // Parser l'année et le numéro de semaine
     const [yearStr, weekNumStr] = weekId.split("-W");
     const weekYear = parseInt(yearStr);
     const weekNumber = parseInt(weekNumStr);
-    console.log(`Parsed year: ${weekYear}, week number: ${weekNumber}`);
 
+    // Créer l'objet DateTime pour le début de la semaine ISO
     const weekStart = luxon.DateTime.fromObject({
       weekYear: weekYear,
       weekNumber: weekNumber,
@@ -464,10 +472,35 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Pour obtenir l'intervalle d'une semaine complète, utiliser le début de la semaine actuelle
-    // et le début de la semaine suivante.
-    const nextWeekStart = weekStart.plus({ weeks: 1 });
-    const weekInterval = luxon.Interval.fromDateTimes(weekStart, nextWeekStart);
+    // Calculer la fin de la semaine (6 jours après le début)
+    const weekEnd = weekStart.plus({ days: 6 });
+
+    // Afficher la plage de dates de la semaine
+    modalWeekRange.textContent = `Du ${weekStart.toFormat(
+      "dd/MM/yyyy"
+    )} au ${weekEnd.toFormat("dd/MM/yyyy")}`;
+
+    // Récupérer le nombre de membres dans la squad
+    const currentSquad = squads.find((s) => s.name === squadName);
+    const totalMembersInSquad = members.filter(
+      (m) => m.squad_id === currentSquad?.id
+    ).length;
+    modalTeamMembers.textContent = `Membres dans l'équipe : ${totalMembersInSquad}`;
+
+    // NOUVEAU: Récupérer et afficher le pourcentage d'absence
+    const cellData = capacityDataGlobal.find(
+      (d) => d.squadName === squadName && d.weekId === weekId
+    );
+    if (cellData) {
+      modalAbsencePercentage.textContent = `Pourcentage d'absence : ${cellData.percentageAbsence}%`;
+    } else {
+      modalAbsencePercentage.textContent = `Pourcentage d'absence : N/A`;
+    }
+
+    const weekInterval = luxon.Interval.fromDateTimes(
+      weekStart,
+      weekEnd.plus({ days: 1 })
+    ); // Inclure le dernier jour
 
     // Filtrer les absences qui appartiennent à cette squad ET chevauchent cette semaine
     const relevantAbsences = allAbsences.filter((abs) => {
