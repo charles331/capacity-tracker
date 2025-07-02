@@ -36,7 +36,8 @@ export function calculateWeeklyCapacity(
   for (let i = 0; i < numWeeksAhead; i++) {
     const currentWeekStart = today.plus({ weeks: i }).startOf("week"); // Début de la semaine (lundi)
 
-    // CORRECTION CLÉ ICI: Construire manuellement le weekId pour garantir le format "yyyy-WNN"
+    // Construire manuellement le weekId pour garantir le format "yyyy-WNN"
+    // padStart(2, '0') assure que le numéro de semaine a toujours 2 chiffres (ex: W01, W05)
     const weekId = `${currentWeekStart.weekYear}-W${currentWeekStart.weekNumber
       .toString()
       .padStart(2, "0")}`;
@@ -89,9 +90,10 @@ export function calculateWeeklyCapacity(
             currentWeekInterval.intersection(absenceInterval);
 
           if (overlapInterval) {
-            // Utilisation de l'opérateur de non-null assertion (!) car nous avons déjà vérifié que overlapInterval n'est pas null
             let day = overlapInterval.start!.startOf("day");
-            while (day <= overlapInterval.end!.startOf("day")) {
+            // CORRECTION CLÉ ICI: La boucle doit s'arrêter STRICTEMENT AVANT la fin de l'intervalle
+            while (day < overlapInterval.end!) {
+              // Changement de <= à <
               // Vérifier si le jour est un jour ouvrable (lundi=1, dimanche=7)
               if (day.weekday >= 1 && day.weekday <= 5) {
                 // Lundi à Vendredi
