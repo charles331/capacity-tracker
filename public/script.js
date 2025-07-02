@@ -475,10 +475,34 @@ document.addEventListener("DOMContentLoaded", () => {
     // Calculer la fin de la semaine (6 jours après le début)
     const weekEnd = weekStart.plus({ days: 6 });
 
+    // Récupérer et afficher le pourcentage d'absence et les jours fériés
+    const cellData = capacityDataGlobal.find(
+      (d) => d.squadName === squadName && d.weekId === weekId
+    );
+
     // Afficher la plage de dates de la semaine
     modalWeekRange.textContent = `Du ${weekStart.toFormat(
       "dd/MM/yyyy"
     )} au ${weekEnd.toFormat("dd/MM/yyyy")}`;
+
+    // Afficher les jours fériés de la semaine dans un conteneur dédié
+    const modalHolidays = document.getElementById("modalHolidays");
+    if (modalHolidays) {
+      modalHolidays.innerHTML = "";
+      if (
+        cellData &&
+        Array.isArray(cellData.holidays) &&
+        cellData.holidays.length > 0
+      ) {
+        modalHolidays.innerHTML = `<p style="color:#b22222;font-weight:bold;">Jours fériés cette semaine :<br>${cellData.holidays
+          .map((dateStr) => {
+            // Formatage FR
+            const dt = luxon.DateTime.fromISO(dateStr);
+            return dt.isValid ? dt.toFormat("cccc dd/MM/yyyy") : dateStr;
+          })
+          .join("<br>")}</p>`;
+      }
+    }
 
     // Récupérer le nombre de membres dans la squad
     const currentSquad = squads.find((s) => s.name === squadName);
@@ -488,9 +512,6 @@ document.addEventListener("DOMContentLoaded", () => {
     modalTeamMembers.textContent = `Membres dans l'équipe : ${totalMembersInSquad}`;
 
     // NOUVEAU: Récupérer et afficher le pourcentage d'absence
-    const cellData = capacityDataGlobal.find(
-      (d) => d.squadName === squadName && d.weekId === weekId
-    );
     if (cellData) {
       modalAbsencePercentage.textContent = `Pourcentage d'absence : ${cellData.percentageAbsence}%`;
     } else {

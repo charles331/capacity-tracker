@@ -1,6 +1,49 @@
+// Liste des jours fériés belges (fixes et mobiles)
+function getBelgianHolidays(year: number): string[] {
+  // Jours fériés fixes
+  const fixed = [
+    `${year}-01-01`, // Nouvel An
+    `${year}-05-01`, // Fête du Travail
+    `${year}-07-21`, // Fête nationale
+    `${year}-08-15`, // Assomption
+    `${year}-11-01`, // Toussaint
+    `${year}-11-11`, // Armistice
+    `${year}-12-25`, // Noël
+  ];
+
+  // Calcul des jours fériés mobiles (Pâques, Lundi de Pâques, Ascension, Pentecôte)
+  // Méthode de calcul de la date de Pâques (algorithme de Meeus/Jones/Butcher)
+  function getEasterDate(y: number): DateTime {
+    const f = Math.floor,
+      G = y % 19,
+      C = f(y / 100),
+      H = (C - f(C / 4) - f((8 * C + 13) / 25) + 19 * G + 15) % 30,
+      I = H - f(H / 28) * (1 - f(29 / (H + 1)) * f((21 - G) / 11)),
+      J = (y + f(y / 4) + I + 2 - C + f(C / 4)) % 7,
+      L = I - J,
+      month = 3 + f((L + 40) / 44),
+      day = L + 28 - 31 * f(month / 4);
+    return DateTime.local(y, month, day);
+  }
+
+  const easter = getEasterDate(year);
+  const holidays = [
+    ...fixed,
+    easter.toISODate(), // Pâques (dimanche)
+    easter.plus({ days: 1 }).toISODate(), // Lundi de Pâques
+    easter.plus({ days: 39 }).toISODate(), // Ascension (jeudi)
+    easter.plus({ days: 49 }).toISODate(), // Pentecôte (dimanche)
+    easter.plus({ days: 50 }).toISODate(), // Lundi de Pentecôte
+  ];
+  // Filtrer les éventuels null (par sécurité)
+  return holidays.filter((d): d is string => !!d);
+}
 // src/capacityCalculator.ts
 import { DateTime, Interval } from "luxon";
 import { Squad, Member, AbsenceWithDetails, WeekCapacity } from "./types";
+
+// Extension du type WeekCapacity pour inclure les jours fériés (si ce n'est pas déjà fait)
+type WeekCapacityWithHolidays = WeekCapacity & { holidays?: string[] };
 
 const ABSENCE_THRESHOLD_PERCENT = 50; // Seuil d'alerte pour le pourcentage d'absence
 const WORK_DAYS_PER_WEEK = 5; // Nombre de jours ouvrables par semaine (Lundi-Vendredi)
@@ -19,8 +62,8 @@ export function calculateWeeklyCapacity(
   members: Member[],
   absences: AbsenceWithDetails[],
   numWeeksAhead: number = 26
-): WeekCapacity[] {
-  const capacityReport: WeekCapacity[] = [];
+): WeekCapacityWithHolidays[] {
+  const capacityReport: WeekCapacityWithHolidays[] = [];
   const today = DateTime.local(); // Date actuelle
 
   // Créer une map pour un accès rapide aux membres par squad_id
@@ -48,6 +91,18 @@ export function calculateWeeklyCapacity(
       currentWeekStart,
       currentWeekEnd
     );
+    // Calculer les jours fériés de la semaine (lundi à dimanche)
+    const weekHolidays: string[] = [];
+    for (
+      let d = currentWeekStart;
+      d <= currentWeekEnd;
+      d = d.plus({ days: 1 })
+    ) {
+      const holidays = getBelgianHolidays(d.year);
+      if (holidays.includes(d.toISODate())) {
+        weekHolidays.push(d.toISODate());
+      }
+    }
 
     // Pour chaque squad, calculer son pourcentage d'absence pour la semaine courante
     for (const squad of squads) {
@@ -63,6 +118,7 @@ export function calculateWeeklyCapacity(
           weekId: weekId,
           percentageAbsence: 0,
           alert: false,
+          holidays: weekHolidays,
         });
         continue; // Passe à la squad suivante
       }
@@ -92,11 +148,19 @@ export function calculateWeeklyCapacity(
           if (overlapInterval) {
             let day = overlapInterval.start!.startOf("day");
             // CORRECTION CLÉ ICI: La boucle doit s'arrêter STRICTEMENT AVANT la fin de l'intervalle
+            // Récupérer les jours fériés pour l'année en cours (et l'année suivante si la semaine chevauche)
+            const holidays = [
+              ...getBelgianHolidays(day.year),
+              ...getBelgianHolidays(day.year + 1),
+            ];
             while (day < overlapInterval.end!) {
-              // Changement de <= à <
               // Vérifier si le jour est un jour ouvrable (lundi=1, dimanche=7)
-              if (day.weekday >= 1 && day.weekday <= 5) {
-                // Lundi à Vendredi
+              // et n'est pas un jour férié
+              if (
+                day.weekday >= 1 &&
+                day.weekday <= 5 &&
+                !holidays.includes(day.toISODate())
+              ) {
                 memberAbsentWorkingDays++;
               }
               day = day.plus({ days: 1 });
@@ -109,6 +173,15 @@ export function calculateWeeklyCapacity(
           WORK_DAYS_PER_WEEK
         );
       });
+
+      // Ajouter les jours fériés comme absences pour tous les membres (impacte le % d'absence)
+      // Pour chaque jour férié de la semaine, chaque membre est considéré absent ce jour-là
+      totalAbsentWorkingDaysThisWeek +=
+        weekHolidays.filter((h) => {
+          // Ne compter que les jours fériés qui tombent un jour ouvrable (lundi-vendredi)
+          const dt = DateTime.fromISO(h);
+          return dt.isValid && dt.weekday >= 1 && dt.weekday <= 5;
+        }).length * totalSquadMembers;
 
       // Calculer les jours-personne ouvrables totaux disponibles pour la squad cette semaine
       const totalAvailableWorkingDays = totalSquadMembers * WORK_DAYS_PER_WEEK;
@@ -125,6 +198,7 @@ export function calculateWeeklyCapacity(
         weekId: weekId,
         percentageAbsence: parseFloat(percentageAbsence.toFixed(1)), // Arrondi à 1 décimale
         alert: percentageAbsence > ABSENCE_THRESHOLD_PERCENT, // Vérifie si le seuil est dépassé
+        holidays: weekHolidays,
       });
     }
   }
