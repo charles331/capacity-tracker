@@ -19,7 +19,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const newSquadNameInput = document.getElementById("newSquadName");
   const addSquadMessage = document.getElementById("addSquadMessage"); // Message pour le formulaire d'ajout de squad
   const squadList = document.getElementById("squadList"); // Liste des squads existantes
-  const squadListMessage = document.getElementById("squadListMessage"); // Message pour la liste des squads
+  const squadListMessage = (document =
+    document.getElementById("squadListMessage")); // Message pour la liste des squads
 
   // Récupération des éléments du DOM pour la gestion des membres
   const manageMembersSquadSelect = document.getElementById(
@@ -35,10 +36,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const heatmapContainer = document.getElementById("heatmap-container");
   const loadingMessage = document.getElementById("loadingMessage");
 
+  // Récupération des éléments du DOM pour la modale de détails d'absence
+  const absenceDetailsModal = document.getElementById("absenceDetailsModal");
+  const closeButton = absenceDetailsModal.querySelector(".close-button");
+  const modalSquadWeekTitle = document.getElementById("modalSquadWeekTitle");
+  const modalAbsenceList = document.getElementById("modalAbsenceList");
+  const modalNoAbsencesMessage = document.getElementById(
+    "modalNoAbsencesMessage"
+  );
+
   // Variables pour stocker les données récupérées de l'API
   let squads = [];
   let members = [];
-  let allAbsences = [];
+  let allAbsences = []; // Contiendra les AbsenceWithDetails
 
   // --- Fonctions Utilitaires ---
 
@@ -68,14 +78,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (content && icon) {
       content.classList.toggle("hidden");
-      // Mettre à jour l'attribut aria-expanded pour l'accessibilité
       const isExpanded = !content.classList.contains("hidden");
       header.setAttribute("aria-expanded", isExpanded.toString());
 
-      if (content.classList.contains("hidden")) {
-        icon.textContent = "+";
-      } else {
+      if (isExpanded) {
         icon.textContent = "-";
+      } else {
+        icon.textContent = "+";
       }
     }
   }
@@ -234,7 +243,7 @@ document.addEventListener("DOMContentLoaded", () => {
         );
       }
 
-      allAbsences = await response.json();
+      allAbsences = await response.json(); // Stocke toutes les absences avec détails
 
       if (allAbsences.length === 0) {
         modifyAbsenceSelect.innerHTML =
@@ -369,6 +378,9 @@ document.addEventListener("DOMContentLoaded", () => {
           );
           const cell = document.createElement("div");
           cell.className = "heatmap-cell";
+          // Ajouter des data attributes pour récupérer les infos au clic
+          cell.dataset.squadName = squadName;
+          cell.dataset.weekId = weekId;
 
           if (cellData) {
             cell.textContent = `${cellData.percentageAbsence}%`;
@@ -388,6 +400,16 @@ document.addEventListener("DOMContentLoaded", () => {
           heatmapContainer.appendChild(cell);
         });
       });
+
+      // Ajouter les écouteurs d'événements aux cellules de la heatmap
+      document.querySelectorAll(".heatmap-cell").forEach((cell) => {
+        cell.addEventListener("click", (event) => {
+          const clickedCell = event.currentTarget;
+          const squadName = clickedCell.dataset.squadName;
+          const weekId = clickedCell.dataset.weekId;
+          showAbsenceDetails(squadName, weekId);
+        });
+      });
     } catch (error) {
       console.error("Erreur lors du chargement de la capacité:", error);
       showMessage(
@@ -399,6 +421,50 @@ document.addEventListener("DOMContentLoaded", () => {
       heatmapContainer.innerHTML =
         "<p>Impossible de charger les données de capacité. Le serveur est-il démarré ?</p>";
     }
+  }
+
+  /**
+   * Affiche les détails des absences pour une squad et une semaine données dans une modale.
+   * @param {string} squadName Le nom de la squad.
+   * @param {string} weekId L'ID de la semaine (ex: "2025-W28").
+   */
+  function showAbsenceDetails(squadName, weekId) {
+    modalSquadWeekTitle.textContent = `Absences pour ${squadName} - Semaine ${weekId}`;
+    modalAbsenceList.innerHTML = ""; // Nettoyer la liste précédente
+    modalNoAbsencesMessage.style.display = "none"; // Masquer le message "aucune absence"
+
+    const weekStart = DateTime.fromFormat(weekId, "yyyy-W").startOf("week");
+    const weekEnd = weekStart.endOf("week");
+    const weekInterval = Interval.fromDateTimes(weekStart, weekEnd);
+
+    // Filtrer les absences qui appartiennent à cette squad ET chevauchent cette semaine
+    const relevantAbsences = allAbsences.filter((abs) => {
+      const absSquad = squads.find((s) => s.id === abs.squad_id);
+      if (!absSquad || absSquad.name !== squadName) {
+        return false;
+      }
+      const absStart = DateTime.fromISO(abs.start_date);
+      const absEnd = DateTime.fromISO(abs.end_date);
+      const absenceInterval = Interval.fromDateTimes(
+        absStart,
+        absEnd.plus({ days: 1 })
+      ); // Inclure le jour de fin
+      return weekInterval.overlaps(absenceInterval);
+    });
+
+    if (relevantAbsences.length === 0) {
+      modalNoAbsencesMessage.style.display = "block";
+    } else {
+      relevantAbsences.forEach((abs) => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+                    <strong>${abs.member_name}</strong>: du ${abs.start_date} au ${abs.end_date}
+                `;
+        modalAbsenceList.appendChild(li);
+      });
+    }
+
+    absenceDetailsModal.style.display = "flex"; // Afficher la modale (avec flex pour centrage)
   }
 
   // --- Gestionnaires d'Événements ---
@@ -731,6 +797,18 @@ document.addEventListener("DOMContentLoaded", () => {
           memberListMessage
         );
       }
+    }
+  });
+
+  // --- Gestion de la modale ---
+  closeButton.addEventListener("click", () => {
+    absenceDetailsModal.style.display = "none";
+  });
+
+  // Fermer la modale si l'utilisateur clique en dehors du contenu
+  window.addEventListener("click", (event) => {
+    if (event.target === absenceDetailsModal) {
+      absenceDetailsModal.style.display = "none";
     }
   });
 

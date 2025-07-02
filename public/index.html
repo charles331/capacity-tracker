@@ -20,7 +20,11 @@
 
       <!-- Carte: Ajouter une Absence -->
       <div class="card">
-        <div class="card-header" data-target="addAbsenceContent">
+        <div
+          class="card-header"
+          data-target="addAbsenceContent"
+          aria-expanded="false"
+        >
           <h2>Ajouter une Absence</h2>
           <span class="toggle-icon">+</span>
         </div>
@@ -46,7 +50,11 @@
 
       <!-- Carte: Modifier une Absence -->
       <div class="card">
-        <div class="card-header" data-target="modifyAbsenceContent">
+        <div
+          class="card-header"
+          data-target="modifyAbsenceContent"
+          aria-expanded="false"
+        >
           <h2>Modifier une Absence</h2>
           <span class="toggle-icon">+</span>
         </div>
@@ -74,7 +82,11 @@
 
       <!-- Carte: Gérer les Équipes (Squads) -->
       <div class="card">
-        <div class="card-header" data-target="squadManagementContent">
+        <div
+          class="card-header"
+          data-target="squadManagementContent"
+          aria-expanded="false"
+        >
           <h2>Gérer les Équipes (Squads)</h2>
           <span class="toggle-icon">+</span>
         </div>
@@ -101,7 +113,11 @@
 
       <!-- Carte: Gérer les Membres par Équipe -->
       <div class="card">
-        <div class="card-header" data-target="memberManagementContent">
+        <div
+          class="card-header"
+          data-target="memberManagementContent"
+          aria-expanded="false"
+        >
           <h2>Gérer les Membres par Équipe</h2>
           <span class="toggle-icon">+</span>
         </div>
@@ -131,6 +147,21 @@
             <p id="memberListMessage" class="message"></p>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Modale pour les détails des absences -->
+    <div id="absenceDetailsModal" class="modal">
+      <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <h2>Détails des Absences</h2>
+        <h3 id="modalSquadWeekTitle"></h3>
+        <ul id="modalAbsenceList">
+          <!-- Les détails des absences seront insérés ici -->
+        </ul>
+        <p id="modalNoAbsencesMessage" style="display: none">
+          Aucune absence pour cette semaine.
+        </p>
       </div>
     </div>
 

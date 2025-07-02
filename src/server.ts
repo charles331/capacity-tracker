@@ -54,7 +54,7 @@ app.post("/api/absences", async (req: Request, res: Response) => {
 });
 
 /**
- * NOUVELLE ROUTE (déplacée) : Route GET pour obtenir toutes les absences avec les détails complets.
+ * Route GET pour obtenir toutes les absences avec les détails complets.
  * Cette route doit être définie AVANT les routes avec des paramètres dynamiques comme /:id.
  */
 app.get("/api/absences/all", (req: Request, res: Response) => {
@@ -232,7 +232,6 @@ app.get("/api/squads/:squadId/members", (req: Request, res: Response) => {
   }
 });
 
-// Démarrage du serveur
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

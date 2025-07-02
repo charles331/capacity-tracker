@@ -106,9 +106,6 @@ h3 {
 .card-header[aria-expanded="true"] .toggle-icon {
   transform: rotate(45deg); /* Tourne le '+' en 'x' quand ouvert */
 }
-/* Note: Le JS change le texte de l'icône de '+' à '-' et vice-versa.
-   La rotation est un bonus visuel si le texte était toujours '+'.
-   Avec le texte qui change, la rotation est moins essentielle mais peut rester. */
 
 /* --- Styles des formulaires et listes --- */
 /* Ces styles s'appliquent aux éléments DANS le card-content */
@@ -273,5 +270,88 @@ button:hover {
 }
 .capacity-unknown {
   background-color: #e9ecef; /* Gris très clair */
+  color: #6c757d;
+}
+
+/* --- Styles de la Modale --- */
+.modal {
+  display: none; /* Masqué par défaut */
+  position: fixed; /* Reste en place même en scrollant */
+  z-index: 1000; /* Au-dessus de tout le reste */
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto; /* Permet le défilement si le contenu est trop grand */
+  background-color: rgba(0, 0, 0, 0.4); /* Fond semi-transparent noir */
+  /* Ces propriétés seront appliquées par JS quand la modale est affichée */
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background-color: #fefefe;
+  margin: auto; /* Centrage automatique */
+  padding: 30px;
+  border: 1px solid #888;
+  width: 80%; /* Largeur de la modale */
+  max-width: 600px; /* Largeur maximale pour ne pas être trop large sur grand écran */
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  position: relative; /* Pour positionner le bouton de fermeture */
+  animation: fadeIn 0.3s ease-out; /* Animation d'apparition */
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.close-button {
+  color: #aaa;
+  float: right; /* Aligne à droite */
+  font-size: 28px;
+  font-weight: bold;
+  position: absolute; /* Positionnement absolu dans la modale */
+  top: 10px;
+  right: 20px;
+  cursor: pointer;
+}
+
+.close-button:hover,
+.close-button:focus {
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+#modalAbsenceList {
+  list-style: none;
+  padding: 0;
+  margin-top: 20px;
+}
+
+#modalAbsenceList li {
+  background-color: #f0f5f8;
+  padding: 10px 15px;
+  margin-bottom: 8px;
+  border-radius: 5px;
+  border: 1px solid #e0e0e0;
+  font-size: 0.95em;
+}
+
+#modalAbsenceList li strong {
+  color: #0056b3;
+}
+
+#modalNoAbsencesMessage {
+  text-align: center;
+  font-style: italic;
   color: #6c757d;
 }
